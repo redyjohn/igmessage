@@ -1,12 +1,13 @@
-name: Hourly data update
+name: Scheduled data update
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    # Taiwan time (UTC+8): 10:00 and 22:00
+    - cron: "0 2,14 * * *"
   workflow_dispatch:
 
 concurrency:
-  group: hourly-ig-update
+  group: scheduled-ig-update
   cancel-in-progress: true
 
 permissions:
@@ -85,5 +86,5 @@ jobs:
             echo "No docs changes to publish"
             exit 0
           fi
-          git commit -m "chore: hourly refresh of analysis report"
+          git commit -m "chore: scheduled refresh of analysis report"
           git push
