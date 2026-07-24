@@ -63,7 +63,19 @@ def report() -> None:
     result = analyzer.analyze(analyzer.load_comments())
     charts = ChartGenerator(settings).create_all(result)
     html_path, pdf_path = ReportGenerator(settings).generate(result, charts)
-    console.print(f"[green]Generated report[/green]\n{html_path}\n{pdf_path}")
+    if pdf_path:
+        console.print(f"[green]Generated report[/green]\n{html_path}\n{pdf_path}")
+    else:
+        console.print(f"[green]Generated report[/green]\n{html_path}")
+
+
+@app.command("publish-docs")
+def publish_docs() -> None:
+    """Copy the latest HTML report into docs/ for GitHub Pages."""
+    from publish_docs import publish
+
+    target = publish()
+    console.print(f"[green]Published[/green] {target}")
 
 
 @app.command()

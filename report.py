@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Mapping
 
@@ -21,13 +22,17 @@ class ReportGenerator:
         self.environment = Environment(loader=FileSystemLoader(settings.template_dir),
                                        autoescape=select_autoescape(["html", "xml"]))
 
-    def generate(self, analysis: Mapping[str, object], charts: Mapping[str, str]) -> tuple[Path, Path]:
-        """Write ``report.html`` and print it to ``report.pdf`` using Chromium."""
+    def generate(self, analysis: Mapping[str, object], charts: Mapping[str, str]) -> tuple[Path, Path | None]:
+        """Write ``report.html`` and optionally print it to ``report.pdf``."""
         template = self.environment.get_template("report.html")
         html = template.render(analysis=analysis, charts=charts)
         html_path = self.settings.output_dir / "report.html"
         pdf_path = self.settings.output_dir / "report.pdf"
         html_path.write_text(html, encoding="utf-8")
+        skip_pdf = os.getenv("SKIP_PDF", "false").lower() in {"1", "true", "yes"}
+        if skip_pdf:
+            logger.info("Generated {} (PDF skipped)", html_path)
+            return html_path, None
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
             page = browser.new_page()

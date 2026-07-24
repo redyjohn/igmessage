@@ -61,7 +61,19 @@ python main.py all https://www.instagram.com/p/xxxxxxxx/
 - `logs/app.log`：輪替的詳細執行與錯誤紀錄。
 - 長時間爬取時會定期寫入 `output/comments.partial.csv` 作為檢查點。
 
-## 問題排除
+## 每小時自動更新（GitHub Actions）
+
+倉庫已設定 `Hourly data update` workflow：每小時爬取 `POST_URL`、產生報告，並更新 GitHub Pages。
+
+需在 GitHub repo 設定：
+
+- Secrets：`IG_USERNAME`、`IG_PASSWORD`、（建議）`IG_SESSION_JSON`
+- Variables：`POST_URL`（Instagram 貼文網址）
+
+也可在 Actions 頁面手動執行 `workflow_dispatch`。
+
+> 完整抓取十萬則留言可能接近或超過一小時；workflow 設有 concurrency，重疊執行會取消舊任務。Instagram 也可能對雲端 IP 要求驗證，建議定期在本機更新 `session.json` 並同步到 `IG_SESSION_JSON` secret。
+
 
 - **登入失敗／停留在登入頁**：檢查 `.env` 憑證、將 `HEADLESS` 設為 `false` 並完成安全驗證；必要時刪除 `session.json` 後重試。
 - **逾時或網路不穩**：提高 `CRAWL_TIMEOUT_SECONDS`，工具會對頁面開啟進行重試。

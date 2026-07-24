@@ -20,7 +20,14 @@ class ChartGenerator:
         """Store output settings and configure a neutral matplotlib style."""
         self.settings = settings
         plt.style.use("seaborn-v0_8-whitegrid")
-        plt.rcParams["font.sans-serif"] = ["Microsoft JhengHei", "Arial Unicode MS", "DejaVu Sans"]
+        plt.rcParams["font.sans-serif"] = [
+            "Microsoft JhengHei",
+            "Arial Unicode MS",
+            "Noto Sans CJK TC",
+            "Noto Sans CJK JP",
+            "Noto Sans CJK SC",
+            "DejaVu Sans",
+        ]
         plt.rcParams["axes.unicode_minus"] = False
 
     def create_all(self, analysis: Mapping[str, object]) -> dict[str, str]:
@@ -96,7 +103,9 @@ class ChartGenerator:
             r"C:\Windows\Fonts\msjhbd.ttc",
             r"C:\Windows\Fonts\mingliu.ttc",
             "/System/Library/Fonts/PingFang.ttc",
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
             "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSansCJKtc-Regular.otf",
         )
         font_path = next((item for item in font_candidates if Path(item).exists()), None)
         cloud = WordCloud(
