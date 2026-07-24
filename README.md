@@ -63,7 +63,7 @@ python main.py all https://www.instagram.com/p/xxxxxxxx/
 
 ## 定時自動更新（GitHub Actions）
 
-倉庫已設定 `Scheduled data update` workflow：每天台灣時間 **上午 10:00**、**晚間 22:00** 爬取 `POST_URL`、產生報告，並更新 GitHub Pages。
+倉庫已設定 `Scheduled data update` workflow：每天台灣時間 **晚間 19:00** 爬取 `POST_URL`、產生報告，並更新 GitHub Pages。
 
 需在 GitHub repo 設定：
 

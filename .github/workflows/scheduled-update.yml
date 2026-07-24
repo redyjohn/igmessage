@@ -2,8 +2,8 @@ name: Scheduled data update
 
 on:
   schedule:
-    # Taiwan time (UTC+8): 10:00 and 22:00
-    - cron: "0 2,14 * * *"
+    # Taiwan time (UTC+8): 19:00
+    - cron: "0 11 * * *"
   workflow_dispatch:
 
 concurrency:
