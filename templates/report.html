@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IG Comment Analyzer 報告</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>body{background:#f6f7fb}.hero{background:linear-gradient(120deg,#833ab4,#fd1d1d,#fcb045);color:white}.card{border:0;box-shadow:0 3px 14px #00000012}.chart{width:100%;border-radius:.5rem}.table{font-size:.9rem}</style>
+</head>
+<body>
+<header class="hero py-5 mb-4"><div class="container"><h1>IG Comment Analyzer</h1><p class="mb-0">Instagram 留言分析報告</p></div></header>
+<main class="container pb-5">
+ <h2 class="h4 mb-3">基本統計</h2><div class="row g-3 mb-4">
+ {% for label, value in [('總留言數', analysis.summary.total_comments),('唯一留言者', analysis.summary.unique_commenters),('平均留言長度', analysis.summary.average_comment_length),('應援留言數', analysis.summary.support_comments)] %}
+ <div class="col-6 col-lg-3"><div class="card p-3"><small class="text-muted">{{ label }}</small><strong class="fs-3">{{ value }}</strong></div></div>{% endfor %}
+ </div><p>留言最多的人：<strong>{{ analysis.summary.top_commenter or '—' }}</strong>｜應援隊伍數：<strong>{{ analysis.summary.supported_teams or 0 }}</strong></p>
+ <div class="row g-4 mb-4">{% for key, title in [('teams','應援隊伍排行'),('daily','留言時間趨勢'),('commenters','留言者排行'),('keywords','關鍵字排行'),('emojis','Emoji 排行'),('lengths','留言長度分布'),('wordcloud','文字雲')] %}
+ {% if charts.get(key) %}<div class="col-12 col-lg-6"><div class="card p-3"><h2 class="h5">{{ title }}</h2><img class="chart" src="../assets/{{ charts[key] }}" alt="{{ title }}"></div></div>{% endif %}
+ {% endfor %}</div>
+ <div class="row g-4"><div class="col-12 col-lg-6"><div class="card p-3"><h2 class="h5">Top 20 應援隊伍</h2><table class="table"><thead><tr><th>隊伍</th><th>票數</th></tr></thead><tbody>{% for name,count in (analysis.team_votes or {}).items() %}<tr><td>{{ name }}</td><td>{{ count }}</td></tr>{% endfor %}</tbody></table></div></div>
+ <div class="col-12 col-lg-6"><div class="card p-3"><h2 class="h5">Top 20 留言者</h2><table class="table"><tbody>{% for name,count in analysis.top_commenters.items() %}<tr><td>{{ name }}</td><td>{{ count }}</td></tr>{% endfor %}</tbody></table></div></div>
+ <div class="col-12"><div class="card p-3"><h2 class="h5">重複留言（前 20 筆）</h2><table class="table"><thead><tr><th>類型</th><th>留言</th><th>說明</th><th>相似度</th></tr></thead><tbody>{% for item in analysis.duplicates[:20] %}<tr><td>{{ item.match_type }}</td><td>{{ item.comment_1 }}</td><td>{{ item.comment_2 }}</td><td>{{ item.similarity }}</td></tr>{% endfor %}</tbody></table></div></div></div>
+</main></body></html>

@@ -1,0 +1,27 @@
+# Secrets & credentials
+.env
+session.json
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# Runtime / generated
+logs/*
+!logs/.gitkeep
+output/*
+!output/.gitkeep
+assets/*
+!assets/.gitkeep
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
