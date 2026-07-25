@@ -1,8 +1,9 @@
 # IG Comment Analyzer
 
-以 Python 3.12、Playwright 與 Pandas 建立的 Instagram 留言蒐集、分析與報告工具。它會登入 Instagram、保存瀏覽器 Session，透過 Instagram 網頁留言 API 分頁蒐集貼文／Reel 留言，輸出 CSV、Excel、圖表、HTML 與 PDF。
+以 Python 3.12 與 Pandas 建立的 Instagram 留言分析與報告工具。可從既有 `comments.csv` 產出分析、圖表、HTML 與 PDF。
 
-> Instagram 會不定期修改介面、限制自動化行為或要求安全驗證；請只分析您有權存取的公開內容，並遵守 Instagram 的服務條款。若出現兩步驟驗證或 Challenge，請以 `HEADLESS=false` 執行並在瀏覽器中完成驗證，再重新執行。
+> **Instagram 自動爬取與 GitHub Actions 排程已停用。**  
+> 先前以帳密／Playwright 抓別人貼文留言的做法容易觸發風控並導致帳號被鎖；官方 Graph API 也無法讀取別人貼文的留言。請改為匯入既有留言檔後執行 `analyze`／`report`。
 
 ## 安裝
 
@@ -17,38 +18,39 @@ playwright install chromium
 Copy-Item .env.example .env
 ```
 
-編輯 `.env`：
-
-```dotenv
-IG_USERNAME=your_instagram_username
-IG_PASSWORD=your_instagram_password
-HEADLESS=false
-CRAWL_TIMEOUT_SECONDS=30
-MAX_RETRIES=3
-MAX_COMMENTS=0
-CRAWL_DELAY_SECONDS=0.35
-```
-
-- `MAX_COMMENTS=0` 表示抓取全部可取得的留言；設為正整數可限制筆數。
-- `CRAWL_DELAY_SECONDS` 控制 API 分頁間隔，留言極多時可略為提高以降低限流風險。
-
-首次建議使用 `HEADLESS=false`，方便處理 Instagram 顯示的安全驗證。成功登入後，根目錄的 `session.json` 會保存登入狀態；此檔案含敏感 Cookie，請勿提交或分享。
+`.env` 僅在你刻意重新啟用爬取時才需要 Instagram 憑證；一般分析可不填帳密。
 
 ## 使用方式
 
 ```powershell
-# 只蒐集留言，產生 output/comments.csv 和 output/comments.xlsx
-python main.py crawl https://www.instagram.com/p/xxxxxxxx/
-
 # 分析既有 output/comments.csv，產生 analysis.json 和 duplicate_comments.xlsx
 python main.py analyze
 
 # 從既有留言產生 assets/*.png、output/report.html、output/report.pdf
 python main.py report
-
-# 一次完成蒐集、分析與報告
-python main.py all https://www.instagram.com/p/xxxxxxxx/
 ```
+
+將別人提供或既有的留言 CSV 放到 `output/comments.csv`（欄位需含 username、comment、comment_time 等），再執行上述指令即可。
+
+### 爬取（預設需明確啟用）
+
+`crawl`／`all` 需設定 `ALLOW_IG_CRAWL=true`。請只用**備用帳號**，並拉長間隔：
+
+```dotenv
+ALLOW_IG_CRAWL=true
+IG_USERNAME=...
+IG_PASSWORD=...
+HEADLESS=false
+CRAWL_DELAY_SECONDS=3.0
+MAX_COMMENTS=500
+```
+
+```powershell
+python main.py crawl https://www.instagram.com/p/xxxxxxxx/
+```
+
+首次登入建議 `HEADLESS=false` 以便完成驗證。成功後會寫入新的 `session.json`。  
+**不要**把新帳密放回 GitHub Actions；雲端排程仍保持停用。
 
 ## 產出內容
 
@@ -59,24 +61,28 @@ python main.py all https://www.instagram.com/p/xxxxxxxx/
 - `assets/*.png`：留言者、應援隊伍、關鍵字、Emoji、長度、日期趨勢與文字雲圖表。
 - `output/report.html`、`output/report.pdf`：Bootstrap 5 響應式分析報告。
 - `logs/app.log`：輪替的詳細執行與錯誤紀錄。
-- 長時間爬取時會定期寫入 `output/comments.partial.csv` 作為檢查點。
 
-## 定時自動更新（GitHub Actions）
+## GitHub Actions
 
-倉庫已設定 `Scheduled data update` workflow：每天台灣時間 **晚間 19:00** 爬取 `POST_URL`、產生報告，並更新 GitHub Pages。
+定時自動爬取 workflow（`Scheduled data update`）已在 GitHub 上停用，並自倉庫移除。`pages-build-deployment`（GitHub Pages）仍可依 repo 設定運作，但不會再登入 Instagram。
 
-需在 GitHub repo 設定：
+請到 repo **Settings → Secrets and variables → Actions** 刪除不再需要的 `IG_USERNAME`、`IG_PASSWORD`、`IG_SESSION_JSON`，避免憑證殘留。
 
-- Secrets：`IG_USERNAME`、`IG_PASSWORD`、（建議）`IG_SESSION_JSON`
-- Variables：`POST_URL`（Instagram 貼文網址）
+## 續抓／檢查點
 
-也可在 Actions 頁面手動執行 `workflow_dispatch`。
+爬蟲會持續寫入：
 
-> 完整抓取十萬則留言可能接近或超過一小時；workflow 設有 concurrency，重疊執行會取消舊任務。Instagram 也可能對雲端 IP 要求驗證，建議定期在本機更新 `session.json` 並同步到 `IG_SESSION_JSON` secret。
+- `output/crawl_state.json`：最後翻頁游標 `next_min_id`、筆數、時間窗、最舊／最新留言時間
+- `output/comments.partial.csv`：已抓留言（每頁更新）
 
+中斷後直接再執行同一指令即可接續，已存在的 `comment_id` 不會重複寫入。  
+同一時間窗若已 `status=exhausted/completed`，會略過重抓。
 
-- **登入失敗／停留在登入頁**：檢查 `.env` 憑證、將 `HEADLESS` 設為 `false` 並完成安全驗證；必要時刪除 `session.json` 後重試。
-- **逾時或網路不穩**：提高 `CRAWL_TIMEOUT_SECONDS`，工具會對頁面開啟進行重試。
-- **留言極多**：Instagram 單篇可有數萬～十數萬則留言；完整抓取可能需要數十分鐘到數小時。可用 `MAX_COMMENTS` 先取樣，確認流程後再設 `0` 全抓。
-- **抓不到留言**：確認貼文可由登入帳號看到且留言未關閉；完整錯誤會記錄在 `logs/app.log`。
-- **PDF 或 Plotly 圖表失敗**：再次執行 `playwright install chromium`，並確認 `kaleido` 已隨 requirements 安裝。
+下次若要抓「中午之後」，改：
+
+```dotenv
+COMMENT_BEFORE=
+COMMENT_AFTER=2026-07-25T12:01:00+08:00
+```
+
+這會開新時間窗（不沿用舊的歷史游標），但仍會合併既有 CSV、以 id 去重。

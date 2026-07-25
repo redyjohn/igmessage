@@ -17,8 +17,17 @@ from crawler import InstagramCrawler
 from report import ReportGenerator
 from utils import configure_logging
 
-app = typer.Typer(help="Crawl and analyse Instagram post comments.", no_args_is_help=True)
+app = typer.Typer(
+    help="Analyse Instagram post comments from local CSV/Excel files.",
+    no_args_is_help=True,
+)
 console = Console()
+
+CRAWL_DISABLED_MESSAGE = (
+    "Instagram crawling is disabled to protect accounts from lockouts. "
+    "Use `analyze` / `report` on an existing output/comments.csv, "
+    "or set ALLOW_IG_CRAWL=true only if you accept the risk."
+)
 
 
 def _setup() -> tuple[object, CommentAnalyzer]:
@@ -28,9 +37,24 @@ def _setup() -> tuple[object, CommentAnalyzer]:
     return settings, CommentAnalyzer(settings)
 
 
+def _ensure_crawl_allowed() -> None:
+    """Block Playwright Instagram crawl unless explicitly re-enabled."""
+    import os
+
+    from dotenv import load_dotenv
+
+    from config import BASE_DIR
+
+    load_dotenv(BASE_DIR / ".env", encoding="utf-8-sig")
+    if os.getenv("ALLOW_IG_CRAWL", "").lower() not in {"1", "true", "yes"}:
+        console.print(f"[red]{CRAWL_DISABLED_MESSAGE}[/red]")
+        raise typer.Exit(code=1)
+
+
 @app.command()
 def crawl(post_url: str = typer.Argument(..., help="Instagram post or reel URL.")) -> None:
     """Crawl one Instagram post and save comments.csv/comments.xlsx."""
+    _ensure_crawl_allowed()
     settings, _ = _setup()
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=settings.headless)
@@ -81,6 +105,7 @@ def publish_docs() -> None:
 @app.command()
 def all(post_url: str = typer.Argument(..., help="Instagram post or reel URL.")) -> None:
     """Crawl, analyze, chart, and report an Instagram post in one command."""
+    _ensure_crawl_allowed()
     crawl(post_url)
     report()
 
